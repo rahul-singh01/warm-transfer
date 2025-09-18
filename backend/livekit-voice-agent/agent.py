@@ -28,6 +28,7 @@ async def entrypoint(ctx: agents.JobContext):
         tts=cartesia.TTS(model="sonic-2", voice="f786b574-daa5-4673-aa0c-cbe3e8534c02"),
         vad=silero.VAD.load(),
         turn_detection=MultilingualModel(),
+        preemptive_generation=True,
     )
 
     await session.start(
@@ -37,6 +38,11 @@ async def entrypoint(ctx: agents.JobContext):
             # For telephony applications, use `BVCTelephony` instead for best results
             noise_cancellation=noise_cancellation.BVC(), 
         ),
+    )
+    
+    await session.say(
+        "Hello. How can I help you today?",
+        allow_interruptions=False,       
     )
 
     await session.generate_reply(
