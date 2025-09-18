@@ -36,7 +36,8 @@ class WarmTransferService:
         caller_identity: str,
         agent_a_identity: str,
         agent_b_identity: str,
-        context: Optional[str] = None
+        context: Optional[str] = None,
+        conversation_history: Optional[str] = None
     ) -> Tuple[str, str, str, str]:
         """
         Initiate the complete warm transfer process
@@ -81,7 +82,9 @@ class WarmTransferService:
                 },
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
-                steps_completed=[TransferStep.INITIATED.value, TransferStep.CONSULT_ROOM_CREATED.value]
+                steps_completed=[TransferStep.INITIATED.value, TransferStep.CONSULT_ROOM_CREATED.value],
+                call_summary=context,
+                conversation_history=conversation_history
             )
             
             self.active_transfers[transfer_id] = transfer_state
@@ -111,13 +114,8 @@ class WarmTransferService:
             # Step 3: Generate and play call summary
             await self._generate_and_play_summary(transfer_id)
             
-            # Step 4: Wait for consultation completion signal from Agent A
-            # Note: We don't automatically complete here anymore
-            # Agent A must call the complete-consultation endpoint
             await self._wait_for_consultation_completion(transfer_id)
             
-            # Step 5: Complete the transfer (this now happens when Agent A signals)
-            # This is now handled in signal_consultation_complete method
             
         except Exception as e:
             logger.error(f"Transfer workflow failed for {transfer_id}: {e}")
@@ -245,13 +243,7 @@ class WarmTransferService:
     async def _wait_for_consultation_completion(self, transfer_id: str, timeout: int = 300):
         """Wait for agents to complete their consultation"""
         try:
-            # In a real implementation, Agent A would signal when ready to complete transfer
-            # This could be done via:
-            # 1. A button in the UI that calls an API endpoint
-            # 2. A data message sent through LiveKit
-            # 3. A timeout-based approach
-            
-            # For demo purposes, we simulate consultation time
+        
             consultation_time = 10  # 10 seconds for demo
             await asyncio.sleep(consultation_time)
             
@@ -315,21 +307,15 @@ class WarmTransferService:
             
             logger.info(f"Generated token for Agent B to join original room {original_room}")
             
-            # Step 2: Send Agent B the token to join original room
-            # TODO: In a real implementation, this would be sent via WebSocket or similar
-            # For now, we assume Agent B will automatically join the original room
-            
-            # Step 3: Wait a moment for Agent B to join the original room
+           
             await asyncio.sleep(2)
             
-            # Step 4: Remove Agent A from the original room (they exit the call)
             try:
                 await livekit_service.remove_participant(original_room, agent_a_identity)
                 logger.info(f"Removed Agent A ({agent_a_identity}) from original room {original_room}")
             except Exception as e:
                 logger.warning(f"Could not remove Agent A from original room: {e}")
             
-            # Step 5: Clean up consultation room
             try:
                 await livekit_service.delete_room(consult_room_id)
                 logger.info(f"Deleted consultation room {consult_room_id}")
@@ -339,6 +325,7 @@ class WarmTransferService:
             # Step 6: Update transfer state to completed
             transfer_state.status = TransferStatus.COMPLETED
             transfer_state.target_room = original_room
+            transfer_state.agent_b_token = agent_b_token
             transfer_state.updated_at = datetime.now()
             self.transfer_steps[transfer_id].append(TransferStep.TRANSFER_COMPLETE)
             transfer_state.steps_completed.append(TransferStep.TRANSFER_COMPLETE.value)

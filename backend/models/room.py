@@ -53,6 +53,7 @@ class TransferRequest(BaseModel):
     caller_identity: Optional[str] = None
     agent_a_identity: Optional[str] = None
     call_summary: Optional[str] = None
+    conversation_history: Optional[str] = None  # Full conversation history for Agent B
     metadata: Optional[Dict[str, Any]] = None
 
 class TransferResponse(BaseModel):
@@ -174,4 +175,5 @@ class TransferState(BaseModel):
     steps_completed: List[str] = []
     error_details: Optional[str] = None
     call_summary: Optional[str] = None
+    conversation_history: Optional[str] = None  # Full conversation history for Agent B
     agent_b_token: Optional[str] = None  # Token for Agent B to join the room

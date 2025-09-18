@@ -93,9 +93,23 @@ class LiveKitService:
         """Generate a join token for a participant"""
         try:
             await self._ensure_initialized()
-            # Check if room exists
+            
+            # Check if room exists locally, if not try to get from LiveKit or create entry
             if room_id not in self.rooms:
-                raise ValueError(f"Room {room_id} not found")
+                logger.info(f"Room {room_id} not in local state, checking LiveKit or creating entry...")
+                room_info = await self.get_room_info(room_id)
+                if not room_info:
+                    # Create a minimal room entry for rooms that exist in LiveKit but not locally
+                    logger.info(f"Creating minimal room entry for {room_id}")
+                    self.rooms[room_id] = RoomState(
+                        room_id=room_id,
+                        room_type=RoomType.CALL,  # Default type
+                        participants={},
+                        created_at=datetime.now(),
+                        last_activity=datetime.now(),
+                        is_active=True,
+                        metadata={"auto_created": True}
+                    )
             
             # Create actual LiveKit access token
             token = AccessToken(self.api_key, self.api_secret)
@@ -108,6 +122,7 @@ class LiveKitService:
                 room=room_id,
                 can_publish=True,
                 can_subscribe=True,
+                can_publish_data=True
             )
             token.with_grants(video_grant)
             
@@ -151,7 +166,9 @@ class LiveKitService:
         original_room_id: str,
         caller_identity: str,
         agent_a_identity: str,
-        agent_b_identity: str
+        agent_b_identity: str,
+        context: Optional[str] = None,
+        conversation_history: Optional[str] = None
     ) -> Tuple[str, str, str, str]:
         """
         Initiate warm transfer process
@@ -195,7 +212,9 @@ class LiveKitService:
                 },
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
-                steps_completed=["consult_room_created"]
+                steps_completed=["consult_room_created"],
+                call_summary=context,
+                conversation_history=conversation_history
             )
             
             logger.info(f"Initiated transfer {transfer_id} from room {original_room_id}")
