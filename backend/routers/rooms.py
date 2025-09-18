@@ -43,17 +43,14 @@ async def create_room(request: CreateRoomRequest):
 async def initiate_transfer(request: TransferRequest):
     """Initiate a warm transfer between agents"""
     try:
-        # Validate that the original room exists
         room_info = await livekit_service.get_room_info(request.room_id)
         if not room_info:
             raise HTTPException(status_code=404, detail=f"Room {request.room_id} not found")
 
-        # Infer caller and agent identities if not provided
         caller_identity = request.caller_identity
         agent_a_identity = request.agent_a_identity
         
         if not caller_identity or not agent_a_identity:
-            # Get participants from room to infer identities
             participants = room_info.participants
             
             if not caller_identity:
@@ -68,7 +65,6 @@ async def initiate_transfer(request: TransferRequest):
                     caller_identity = list(participants.keys())[0] if participants else "caller"
             
             if not agent_a_identity:
-                # Find the current agent (participant with role 'agent_a' or first non-caller)
                 for identity, participant in participants.items():
                     if participant.role.value == 'agent_a' or (participant.role.value != 'caller' and identity != caller_identity):
                         agent_a_identity = identity
@@ -121,8 +117,6 @@ async def complete_consultation(transfer_id: str, request: CompleteConsultationR
 async def complete_transfer(room_id: str, transfer_id: str, target_room_id: Optional[str] = None):
     """Complete a warm transfer (legacy endpoint)"""
     try:
-        # This endpoint is kept for backward compatibility
-        # The new flow uses the consultation completion endpoint above
         success = await livekit_service.complete_transfer(transfer_id, target_room_id)
         
         if success:

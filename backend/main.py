@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv('../.env')
 
 # Import routers
-from routers import rooms, participants, calls
+from routers import rooms, participants, calls, transfers
 
 # Configure logging
 logging.basicConfig(
@@ -40,6 +40,7 @@ app.add_middleware(
 app.include_router(rooms.router)
 app.include_router(participants.router)
 app.include_router(calls.router)
+app.include_router(transfers.router)
 
 @app.get("/api/health")
 async def health_check():

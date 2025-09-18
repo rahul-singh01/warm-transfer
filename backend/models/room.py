@@ -173,3 +173,5 @@ class TransferState(BaseModel):
     updated_at: datetime
     steps_completed: List[str] = []
     error_details: Optional[str] = None
+    call_summary: Optional[str] = None
+    agent_b_token: Optional[str] = None  # Token for Agent B to join the room

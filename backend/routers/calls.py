@@ -163,10 +163,3 @@ async def stop_call_recording(room_id: str):
     except Exception as e:
         logger.error(f"Failed to stop recording: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
-# Helper functions
-async def get_room_transcript(room_id: str) -> List[TranscriptEntry]:
-    """Get transcript entries for a room (placeholder)"""
-    # In production, this would fetch from a database
-    # For now, return empty list (will use mock data)
-    return []
